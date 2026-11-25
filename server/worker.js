@@ -2,11 +2,12 @@ import "../assets/vendor/libphonenumber-max.js";
 import "../assets/validation.js";
 import { countRequest, pageRequestMetric } from "./analytics.js";
 import { BOOKING_MINUTES, createScheduler, nylasConfigured, zoomJoinUrl } from "./nylas.js";
+import { reserveBooking } from "./booking-limit.js";
 
 const V = globalThis.CoachValidation;
 const DAY = 86400000;
 const PLUNK_SEND_URL = "https://next-api.useplunk.com/v1/send";
-const json = (body, status = 200) => new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff" } });
+const json = (body, status = 200, headers = {}) => new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff", ...headers } });
 class PublicError extends Error { constructor(code, status = 400, field) { super(code); this.code = code; this.status = status; this.field = field; } }
 const fail = (code, status, field) => { throw new PublicError(code, status, field); };
 const zoneIsValid = (zone) => { try { return typeof zone === "string" && zone.length < 100 && !!new Intl.DateTimeFormat("en", { timeZone: zone }); } catch { return false; } };
@@ -21,7 +22,7 @@ function capabilities(env) {
   return {
     contact: mailReady,
     newsletter: plunkReady,
-    calendar: mailReady && nylasConfigured(env),
+    calendar: mailReady && nylasConfigured(env) && !!env.ANALYTICS_DB,
     durationMinutes: BOOKING_MINUTES
   };
 }
@@ -312,16 +313,33 @@ export function createHandler({ fetch: providerFetch = globalThis.fetch, now = (
       const start = dateValue(body.start);
       if (!Number.isFinite(start) || start % 1_000 !== 0 || start <= now() || start > now() + 366 * DAY || !zoneIsValid(body.timeZone)) fail("invalid_request", 400);
       count("booking_attempts_valid");
-      const result = await scheduler.book(env, start / 1_000, { name: clean(body.name), email: clean(body.email), timezone: body.timeZone });
+      const guest = { name: clean(body.name), email: clean(body.email), timezone: body.timeZone };
+      const nowSeconds = Math.floor(now() / 1_000);
+      const end = start / 1_000 + BOOKING_MINUTES * 60;
+      const began = performance.now();
+      const guard = await reserveBooking(env, guest.email, nowSeconds, { digest, fail });
+      const timings = [{ name: "booking_guard", duration: performance.now() - began }];
+      let result;
+      try {
+        result = await scheduler.book(env, start / 1_000, guest, {
+          timings, beforeCreate: (config) => guard.check(scheduler, config)
+        });
+        await guard.confirm(result, end);
+      } catch (error) {
+        await guard.release(error, end);
+        throw error;
+      }
       count("bookings_confirmed");
+      timings.push({ name: "booking_total", duration: performance.now() - began });
+      const timingHeaders = { "Server-Timing": timings.map(({ name, duration }) => `${name};dur=${duration.toFixed(1)}`).join(", ") };
       const receipts = bookingEmails(env, body, start, result);
       if (typeof context?.waitUntil === "function") {
         context.waitUntil(receipts.catch(() => {
           console.error("Booking notification work could not be completed");
         }));
-        return json({ ok: true, bookingUid: result.booking.booking_id, confirmationEmailPending: true }, 201);
+        return json({ ok: true, bookingUid: result.booking.booking_id, confirmationEmailPending: true }, 201, timingHeaders);
       }
-      return json({ ok: true, bookingUid: result.booking.booking_id, ...await receipts }, 201);
+      return json({ ok: true, bookingUid: result.booking.booking_id, ...await receipts }, 201, timingHeaders);
     } catch (error) {
       return json({ code: error instanceof PublicError ? error.code : "service_unavailable", ...(error instanceof PublicError && error.field ? { field: error.field } : {}) }, error instanceof PublicError ? error.status : 503);
     }

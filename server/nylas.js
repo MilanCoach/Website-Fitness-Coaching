@@ -58,7 +58,7 @@ export function createScheduler(provider, fail) {
         booking.reminders?.some((reminder) => reminder.type !== "webhook")) {
       fail("service_unavailable", 503);
     }
-    return organizer.booking.calendar_id;
+    return { calendarId: organizer.booking.calendar_id };
   }
 
   async function slots(env, token, start, end) {
@@ -77,16 +77,26 @@ export function createScheduler(provider, fail) {
     return slots(env, await session(env), start, end);
   }
 
-  async function book(env, start, guest) {
-    const [token, calendarId] = await Promise.all([session(env), configuration(env)]);
+  async function book(env, start, guest, { beforeCreate, timings = [] } = {}) {
+    async function measure(name, work) {
+      const began = performance.now();
+      try { return await work(); }
+      finally { timings.push({ name, duration: performance.now() - began }); }
+    }
+    const [token, config] = await Promise.all([
+      measure("nylas_session", () => session(env)),
+      measure("nylas_configuration", () => configuration(env))
+    ]);
+    const { calendarId } = config;
+    if (beforeCreate) await measure("booking_limit", () => beforeCreate(config));
     const end = start + durationSeconds;
     let result;
     try {
-      result = await request(env, "/scheduling/bookings", {
+      result = await measure("nylas_booking", () => request(env, "/scheduling/bookings", {
         token,
         body: { start_time: start, end_time: end, guest },
         timeout: 12_000
-      });
+      }));
     } catch {
       fail("booking_uncertain", 503);
     }
@@ -96,6 +106,40 @@ export function createScheduler(provider, fail) {
     const booking = data?.data;
     if (!response.ok || booking?.status !== "booked" || !id(booking?.booking_id)) fail("service_unavailable", 503);
     return { booking, calendarId };
+  }
+
+  async function upcoming(env, config, email, now) {
+    const day = 86400;
+    const normalized = email.trim().toLowerCase();
+    async function search(start, end) {
+      let cursor = "";
+      for (let page = 0; page < 10; page++) {
+        const query = new URLSearchParams({
+          calendar_id: config.calendarId, attendees: normalized,
+          start: String(start), end: String(end), limit: "200",
+          select: "id,status,when,participants"
+        });
+        if (cursor) query.set("page_token", cursor);
+        const { response, data } = await request(env, `/grants/${env.NYLAS_GRANT_ID}/events?${query}`);
+        if (!response.ok || !Array.isArray(data?.data)) fail("service_unavailable", 503);
+        const match = data.data.find((event) => event?.status !== "cancelled" &&
+          (!Number.isSafeInteger(event.when?.end_time) || event.when.end_time > now) &&
+          event.participants?.some((person) => person.email?.trim().toLowerCase() === normalized));
+        if (match) return match;
+        const next = data.next_cursor;
+        if (!next) return null;
+        if (typeof next !== "string" || next === cursor) fail("service_unavailable", 503);
+        cursor = next;
+      }
+      fail("service_unavailable", 503);
+    }
+    // iCloud limits each query to one year. Cover the site's full booking
+    // horizon without exceeding that provider limit in either request.
+    const matches = await Promise.all([
+      search(now, now + 365 * day),
+      search(now + 365 * day, now + 367 * day)
+    ]);
+    return matches.find(Boolean) || null;
   }
 
   async function event(env, eventId, calendarId, timeout) {
@@ -108,5 +152,5 @@ export function createScheduler(provider, fail) {
     return data.data;
   }
 
-  return { availability, book, event };
+  return { availability, book, event, upcoming };
 }

@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { createHandler } from "../server/worker.js";
+import { memoryD1 } from "./d1-helper.mjs";
 
 const now = Date.parse("2026-11-08T12:00:00Z");
 const start = "2026-11-09T10:00:00.000Z";
@@ -14,6 +15,7 @@ const env = () => ({
   PLUNK_API_KEY: "test-only", MAIL_FROM: "coach@example.com", MAIL_TO: "owner@example.com",
   NYLAS_API_KEY: "nylas-test", NYLAS_API_REGION: "eu", NYLAS_GRANT_ID: "icloud-grant", NYLAS_CONFIGURATION_ID: "coaching-config",
   NYLAS_WEBHOOK_SECRET: "webhook-test-only",
+  ANALYTICS_DB: memoryD1(),
   REQUEST_LIMITER: { limit: async () => ({ success: true }) },
   RECIPIENT_LIMITER: { limit: async () => ({ success: true }) }
 });
@@ -27,9 +29,10 @@ function providerGate() {
   const resumed = new Promise((resolve) => { release = resolve; });
   return { entered, release, async wait() { enter(); await resumed; } };
 }
-function mockScheduler({ slots = [{ start_time: startSeconds, end_time: endSeconds, participants: ["private@example.com"] }], availabilityWindowStart, bookingStatus = "booked", bookingResponseStatus = 200, bookingConnectionFails = false, bookingGate, eventGate, emailGate, configuration, eventStart = startSeconds, confirmationFails = false } = {}) {
+function mockScheduler({ slots = [{ start_time: startSeconds, end_time: endSeconds, participants: ["private@example.com"] }], availabilityWindowStart, bookingStatus = "booked", bookingResponseStatus = 200, bookingConnectionFails = false, bookingGate, eventGate, emailGate, configuration, eventStart = startSeconds, confirmationFails = false, upcomingEvents = [] } = {}) {
   const calls = [];
   const sends = [];
+  const eventRecord = { id: "event-123", title: "Coaching call", status: "confirmed", participants: [{ email: details.email }], conferencing: { details: { url: joinUrl } }, when: { start_time: eventStart, end_time: eventStart + 25 * 60 } };
   const handle = mockHandler(async (url, options) => {
     const path = new URL(url).pathname;
     const payload = options.body ? JSON.parse(options.body) : null;
@@ -44,7 +47,7 @@ function mockScheduler({ slots = [{ start_time: startSeconds, end_time: endSecon
         requires_session_auth: true,
         participants: [{ is_organizer: true, booking: { calendar_id: "icloud-calendar" } }],
         availability: { duration_minutes: 25 },
-        event_booking: { booking_type: "booking", disable_emails: true, notify_participants: false, conferencing: { provider: "Zoom Meeting", autocreate: { conf_grant_id: "zoom-grant" } } }
+        event_booking: { title: "Coaching call", booking_type: "booking", disable_emails: true, notify_participants: false, conferencing: { provider: "Zoom Meeting", autocreate: { conf_grant_id: "zoom-grant" } } }
       } });
     }
     if (path === "/v3/scheduling/availability") {
@@ -55,6 +58,11 @@ function mockScheduler({ slots = [{ start_time: startSeconds, end_time: endSecon
       }
       return okay({ data: { time_slots: slots } });
     }
+    if (path === "/v3/grants/icloud-grant/events") {
+      assert.equal(options.headers.Authorization, "Bearer nylas-test");
+      assert.equal(new URL(url).searchParams.get("attendees"), details.email);
+      return okay({ data: upcomingEvents });
+    }
     if (path === "/v3/scheduling/bookings") {
       if (bookingGate) await bookingGate.wait();
       if (bookingConnectionFails) throw new TypeError("Test connection failure");
@@ -64,12 +72,14 @@ function mockScheduler({ slots = [{ start_time: startSeconds, end_time: endSecon
         guest: { name: details.name, email: details.email, timezone: "Europe/Berlin" }
       });
       if (bookingResponseStatus !== 200) return okay({ error: { type: "test_booking_error" } }, bookingResponseStatus);
+      eventRecord.status = "confirmed";
+      eventRecord.when = { start_time: eventStart, end_time: eventStart + 25 * 60 };
       return okay({ data: { booking_id: "booking-123", status: bookingStatus, event_id: "event-123" } });
     }
     if (path === "/v3/grants/icloud-grant/events/event-123") {
       assert.equal(new URL(url).searchParams.get("calendar_id"), "icloud-calendar");
       if (eventGate) await eventGate.wait();
-      return okay({ data: { conferencing: { details: { url: joinUrl } }, when: { start_time: eventStart } } });
+      return okay({ data: eventRecord });
     }
     if (url === "https://next-api.useplunk.com/v1/send") {
       sends.push(payload);
@@ -78,16 +88,19 @@ function mockScheduler({ slots = [{ start_time: startSeconds, end_time: endSecon
     }
     assert.fail(`Unexpected provider request to ${path}`);
   });
-  return { handle, calls, sends };
+  return { handle, calls, sends, eventRecord };
 }
 
 function mockCounters(settings = env()) {
   const writes = [];
   const tasks = [];
+  const database = settings.ANALYTICS_DB || memoryD1();
   settings.ANALYTICS_DB = {
+    ...database,
     prepare(sql) {
+      if (!sql.includes("INSERT INTO weekly_analytics")) return database.prepare(sql);
       assert.match(sql, /ON CONFLICT \(week_start, metric\) DO UPDATE SET total = total \+ 1/);
-      return { bind(week, metric) { return { async run() { writes.push([week, metric]); } }; } };
+      return { bind(week, metric) { return { async run() { writes.push([week, metric]); return database.prepare(sql).bind(week, metric).run(); } }; } };
     }
   };
   return { settings, writes, context: { waitUntil(task) { tasks.push(task); } }, async flush() { await Promise.all(tasks); } };
@@ -219,7 +232,7 @@ test("booking responds after Nylas confirms without waiting for the Zoom lookup 
   const background = [];
   let responseFinished = false, backgroundFinished = false;
   const responsePromise = handle(request("book", bookingDetails), env(), {
-    waitUntil(task) { background.push(task.then(() => { backgroundFinished = true; })); }
+    waitUntil(task) { background.push(task); }
   }).then((response) => { responseFinished = true; return response; });
   try {
     await bookingGate.entered;
@@ -235,7 +248,8 @@ test("booking responds after Nylas confirms without waiting for the Zoom lookup 
     assert.equal(result.blocked, undefined, "a confirmed booking must not wait for its notification work");
     assert.equal(result.response.status, 201);
     assert.deepEqual(await result.response.json(), { ok: true, bookingUid: "booking-123", confirmationEmailPending: true });
-    assert.equal(background.length, 1);
+    assert.ok(background.length > 0);
+    const backgroundWork = Promise.all(background).then(() => { backgroundFinished = true; });
     assert.equal(backgroundFinished, false);
     assert.equal(sends.length, 0);
 
@@ -244,7 +258,7 @@ test("booking responds after Nylas confirms without waiting for the Zoom lookup 
     assert.equal(backgroundFinished, false);
     assert.ok(sends.length >= 1);
     emailGate.release();
-    await Promise.all(background);
+    await backgroundWork;
     assert.equal(backgroundFinished, true);
     assert.equal(sends.length, 2);
     assert.ok(sends.find(({ to }) => to === details.email).body.includes(joinUrl));
@@ -262,9 +276,11 @@ test("booking emails and analytics follow a provider-confirmed booking", async (
   assert.equal(response.status, 201);
   assert.deepEqual(await response.json(), { ok: true, bookingUid: "booking-123", confirmationEmailPending: true });
   await analytics.flush();
-  assert.deepEqual(calls.map(({ path }) => path).slice(2, 4), [
-    "/v3/scheduling/bookings", "/v3/grants/icloud-grant/events/event-123"
-  ]);
+  const bookedAt = calls.findIndex(({ path }) => path === "/v3/scheduling/bookings");
+  const detailsAt = calls.findIndex(({ path }) => path === "/v3/grants/icloud-grant/events/event-123");
+  assert.ok(bookedAt >= 2 && detailsAt > bookedAt);
+  assert.equal(calls.some(({ path }) => path === "/v3/scheduling/availability"), false);
+  assert.match(response.headers.get("Server-Timing"), /nylas_booking;dur=\d+(?:\.\d+)?/);
   const confirmation = sends.find(({ to }) => to === details.email);
   assert.match(confirmation.body, /11:00/);
   assert.ok(confirmation.body.includes(joinUrl));
@@ -279,7 +295,7 @@ test("a background confirmation email failure is logged without changing the con
   assert.equal(response.status, 201);
   assert.deepEqual(await response.json(), { ok: true, bookingUid: "booking-123", confirmationEmailPending: true });
   await Promise.all(background);
-  assert.equal(background.length, 1);
+  assert.ok(background.length > 0);
   assert.equal(calls.filter(({ path }) => path === "/v3/scheduling/bookings").length, 1);
   assert.equal(sends.length, 2);
   assert.ok(errorLog.mock.calls.some(({ arguments: args }) => args[0] === "Booking confirmation email could not be queued"));
@@ -326,6 +342,91 @@ test("an uncertain booking write is not retried or followed by confirmation emai
     assert.equal(calls.filter(({ path }) => path === "/v3/scheduling/bookings").length, 1);
     assert.equal(sends.length, 0);
   }
+});
+test("the same email cannot book a second upcoming call, including case and whitespace changes", async () => {
+  const settings = env();
+  const { handle, calls, sends } = mockScheduler();
+  assert.equal((await handle(request("book", bookingDetails), settings)).status, 201);
+  const again = await handle(request("book", { ...bookingDetails, email: "  CLIENT@EXAMPLE.COM  " }), settings);
+  assert.equal(again.status, 409);
+  assert.deepEqual(await again.json(), { code: "booking_exists" });
+  assert.equal(calls.filter(({ path }) => path === "/v3/scheduling/bookings").length, 1);
+  assert.equal(sends.length, 2);
+  const row = settings.ANALYTICS_DB.sqlite.prepare("SELECT * FROM booking_guards").get();
+  assert.match(row.email_hash, /^[a-f0-9]{64}$/);
+  assert.equal(JSON.stringify(row).toLowerCase().includes(details.email), false);
+});
+test("booking limits survive a new handler instance", async () => {
+  const settings = env();
+  const first = mockScheduler(), second = mockScheduler();
+  assert.equal((await first.handle(request("book", bookingDetails), settings)).status, 201);
+  const again = await second.handle(request("book", bookingDetails), settings);
+  assert.equal(again.status, 409);
+  assert.equal(second.calls.some(({ path }) => path === "/v3/scheduling/bookings"), false);
+});
+test("simultaneous requests for the same email create at most one booking", async () => {
+  const settings = env();
+  const bookingGate = providerGate();
+  const first = mockScheduler({ bookingGate }), second = mockScheduler();
+  const pending = first.handle(request("book", bookingDetails), settings);
+  try {
+    await bookingGate.entered;
+    const again = await second.handle(request("book", bookingDetails, { "Idempotency-Key": "another-request-1234" }), settings);
+    assert.equal(again.status, 409);
+    assert.deepEqual(await again.json(), { code: "booking_in_progress" });
+    assert.equal(second.calls.some(({ path }) => path === "/v3/scheduling/bookings"), false);
+  } finally {
+    bookingGate.release();
+    assert.equal((await pending).status, 201);
+  }
+});
+test("a cancelled call allows the same email to book again", async () => {
+  const settings = env();
+  const { handle, calls, eventRecord } = mockScheduler();
+  assert.equal((await handle(request("book", bookingDetails), settings)).status, 201);
+  eventRecord.status = "cancelled";
+  assert.equal((await handle(request("book", bookingDetails), settings)).status, 201);
+  assert.equal(calls.filter(({ path }) => path === "/v3/scheduling/bookings").length, 2);
+});
+test("a definite booking failure releases the reservation for a retry", async () => {
+  const settings = env();
+  const failed = mockScheduler({ bookingResponseStatus: 400 });
+  assert.equal((await failed.handle(request("book", bookingDetails), settings)).status, 503);
+  const retry = mockScheduler();
+  assert.equal((await retry.handle(request("book", bookingDetails), settings)).status, 201);
+});
+test("an uncertain booking blocks another create attempt without extending its hold", async () => {
+  const settings = env();
+  const failed = mockScheduler({ bookingConnectionFails: true });
+  assert.equal((await failed.handle(request("book", bookingDetails), settings)).status, 503);
+  const previous = settings.ANALYTICS_DB.sqlite.prepare("SELECT uncertain_until FROM booking_guards").get().uncertain_until;
+  const retry = mockScheduler();
+  const response = await retry.handle(request("book", { ...bookingDetails, start: "2026-11-10T10:00:00.000Z" }), settings);
+  assert.equal(response.status, 503);
+  assert.deepEqual(await response.json(), { code: "booking_uncertain" });
+  assert.equal(retry.calls.some(({ path }) => path === "/v3/scheduling/bookings"), false);
+  assert.equal(settings.ANALYTICS_DB.sqlite.prepare("SELECT uncertain_until FROM booking_guards").get().uncertain_until, previous);
+});
+test("bookings made before the guard was installed are included in the email limit", async () => {
+  const upcomingEvents = [{
+    id: "existing-event", title: "Coaching call", status: "confirmed",
+    when: { start_time: startSeconds, end_time: endSeconds },
+    participants: [{ email: "CLIENT@EXAMPLE.COM" }]
+  }];
+  const { handle, calls, sends } = mockScheduler({ upcomingEvents });
+  const response = await handle(request("book", bookingDetails), env());
+  assert.equal(response.status, 409);
+  assert.deepEqual(await response.json(), { code: "booking_exists" });
+  assert.equal(calls.some(({ path }) => path === "/v3/scheduling/bookings"), false);
+  assert.equal(sends.length, 0);
+});
+test("booking is unavailable when the persistent guard cannot be used", async () => {
+  const settings = env();
+  delete settings.ANALYTICS_DB;
+  const { handle, calls } = mockScheduler();
+  const response = await handle(request("book", bookingDetails), settings);
+  assert.equal(response.status, 503);
+  assert.equal(calls.some(({ path }) => path === "/v3/scheduling/bookings"), false);
 });
 test("page counters use the actual HTML responses and retain weekly totals only", async () => {
   const analytics = mockCounters({

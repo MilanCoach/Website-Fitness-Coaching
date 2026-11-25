@@ -5,6 +5,8 @@
   const messages = { invalid_email: "You've entered an invalid E-Mail address.", invalid_phone: "Please enter a valid phone number including its country code.", rate_limited: "Please wait a moment before trying again.", slot_unavailable: "That time is no longer available. Please choose another time.", service_unavailable: "This service is temporarily unavailable. Please try again later.", invalid_request: "Please check your entries and try again.", network_error: "We couldn't connect. Please try again." };
   messages.delivery_uncertain = "This request is already being processed. Please check your E-Mail before trying again.";
   messages.booking_uncertain = "Your booking may have gone through. Please check your E-Mail or use Contact me before choosing another time.";
+  messages.booking_exists = "This email address already has an upcoming call. Please contact me to change or cancel it.";
+  messages.booking_in_progress = "A booking for this email address is being processed. Please wait and check your email before trying again.";
   async function request(path, data, requestId) {
     const controller = new AbortController();
     const timeout = path === "/api/book" ? 55000 : data ? 27000 : 16000;

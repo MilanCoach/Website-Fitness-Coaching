@@ -8,7 +8,7 @@ window.COACHING_SITE = {
   initials: "M.G.",
   copyright: "© 2026 M. G. Milan Grubor. All rights reserved.",
   // Change only when the policy itself is revised; it is not a visitor counter.
-  privacyLastUpdated: "2026-11-17",
+  privacyLastUpdated: "2026-11-25",
   fieldLimits: { name: 60, email: 254, message: 450, goals: 180, obstacles: 180, phone: 25 },
   // Keep preview until SETUP_GUIDE.md is complete. Never put private API keys here.
   backend: { mode: "live" },
