@@ -80,10 +80,6 @@ export function createScheduler(provider, fail) {
   async function book(env, start, guest) {
     const [token, calendarId] = await Promise.all([session(env), configuration(env)]);
     const end = start + durationSeconds;
-    const recheck = () => slots(env, token, start, start + 86400);
-    if (!(await recheck()).includes(start)) fail("slot_unavailable", 409);
-
-    // A failed connection during the write does not tell us whether Nylas created the booking.
     let result;
     try {
       result = await request(env, "/scheduling/bookings", {
@@ -96,7 +92,6 @@ export function createScheduler(provider, fail) {
     }
     const { response, data } = result;
     if (response.status === 409) fail("slot_unavailable", 409);
-    if ([400, 422].includes(response.status) && !(await recheck()).includes(start)) fail("slot_unavailable", 409);
     if (response.status >= 500 || (response.ok && data?.data?.status === "pending")) fail("booking_uncertain", 503);
     const booking = data?.data;
     if (!response.ok || booking?.status !== "booked" || !id(booking?.booking_id)) fail("service_unavailable", 503);
