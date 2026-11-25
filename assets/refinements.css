@@ -1,0 +1,206 @@
+/* EDITABLE DESIGN CONTROLS — see DESIGN_GUIDE.md for examples. */
+:root {
+  --chrome-black: #000000;
+  --chrome-text: #FFFFFF;
+  --chrome-supporting: #D9DFE7;
+  --position-unit: 96px;
+  --brand-shift-left: var(--position-unit);
+  --actions-shift-right: calc(var(--position-unit) * 2);
+  --headline-shift-left: calc(var(--position-unit) * .75);
+  --baseline-inset: max(var(--page-gutter), calc((100vw - var(--wide-width)) / 2));
+  --brand-inset: max(16px, calc(var(--baseline-inset) - var(--brand-shift-left)));
+  --actions-inset: max(16px, calc(var(--baseline-inset) - var(--actions-shift-right)));
+  --headline-inset: max(16px, calc(var(--baseline-inset) - var(--headline-shift-left)));
+  --hero-opening-width: 50%;
+  --hero-opening-height: 100%;
+  --hero-opening-solid: 65%;
+  --hero-media-position: 75% 50%;
+  --newsletter-raise: 10px;
+  --newsletter-button-width: 94px;
+}
+
+/* The page still scrolls with the wheel, touch, trackpad and keyboard. */
+html { scrollbar-width: none; scrollbar-gutter: auto; }
+html::-webkit-scrollbar, body::-webkit-scrollbar { display: none; }
+
+.site-header, .site-footer, .mobile-navigation { background: var(--chrome-black); color: var(--chrome-text); border-color: rgb(255 255 255 / 15%); }
+.site-header { opacity: 1; transform: translateY(calc(-1 * var(--header-lift, 0%))); }
+.site-header .brand, .site-header .text-control, .site-header .language-control, .site-header .menu-toggle { color: var(--chrome-text); }
+.site-header .brand-mark { border-color: var(--chrome-text); }
+.site-header .text-control:hover { color: #BED0FF; }
+.site-header .mobile-navigation { border-color: rgb(255 255 255 / 15%); }
+body[data-page="home"] .site-header[data-over-hero] { border-bottom-color: transparent; box-shadow: none; }
+.header-inner.wide-container { position: relative; width: 100%; margin: 0; padding-left: var(--brand-inset); padding-right: var(--actions-inset); display: flex; justify-content: space-between; }
+.desktop-navigation { position: absolute; left: 50%; transform: translateX(-50%); }
+.footer-inner.wide-container { width: 100%; margin: 0; padding-left: var(--brand-inset); padding-right: var(--baseline-inset); }
+.site-footer .copyright, .site-footer .footer-navigation a, .site-footer .footer-navigation button, .site-footer .social-link, .site-footer .newsletter-description, .site-footer .application-footer-nav a, .site-footer .application-footer-nav button { color: var(--chrome-supporting); }
+.site-footer .footer-navigation a:hover, .site-footer .footer-navigation button:hover, .site-footer .application-footer-nav a:hover, .site-footer .application-footer-nav button:hover, .site-footer .social-link:hover { color: #FFFFFF; }
+.site-footer .copyright { border-color: rgb(255 255 255 / 20%); }
+.site-footer .newsletter h2 { color: var(--chrome-text); }
+.contact-is-open .site-header, .contact-is-open .site-footer { z-index: 110; }
+
+html[data-page-arriving]::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 300;
+  background: var(--chrome-black);
+}
+.page-transition {
+  position: fixed;
+  inset: 0;
+  z-index: 300;
+  display: grid;
+  place-items: center;
+  background: var(--chrome-black);
+  color: var(--chrome-text);
+  animation: page-cover-in 320ms ease-out both;
+}
+.page-transition .brand-mark {
+  width: 74px;
+  height: 74px;
+  border-color: currentColor;
+  font-size: 24px;
+  animation: page-logo-in 280ms 250ms ease-out both;
+}
+@keyframes page-cover-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes page-logo-in { from { opacity: 0; } to { opacity: 1; } }
+.page-transition.is-arriving { animation: page-cover-out 700ms ease-in-out both; }
+.page-transition.is-arriving .brand-mark { animation: none; }
+@keyframes page-cover-out { from { opacity: 1; } to { opacity: 0; } }
+
+/* Full black surrounds the quarter-ellipse, including the seam at the header. */
+.hero { background: #000000; }
+.hero.has-poster { background-image: none; }
+.hero-inner.wide-container { width: 100%; margin: 0; padding-left: var(--headline-inset); padding-right: var(--baseline-inset); }
+.hero-copy { position: relative; align-self: stretch; display: flex; flex-direction: column; justify-content: center; max-width: 100%; }
+.hero-tagline { margin-top: 21px; font-size: clamp(17px, 1.65vw, 24px); line-height: 1.4; }
+.hero-media-window { position: absolute; z-index: -2; inset: 0; background-color: #151515; background-image: var(--hero-poster, none); background-size: cover; background-position: var(--hero-media-position); -webkit-mask-image: radial-gradient(ellipse var(--hero-opening-width) var(--hero-opening-height) at 100% 100%, #000 0%, #000 var(--hero-opening-solid), transparent 100%); mask-image: radial-gradient(ellipse var(--hero-opening-width) var(--hero-opening-height) at 100% 100%, #000 0%, #000 var(--hero-opening-solid), transparent 100%); }
+.hero-media-window .hero-video { z-index: 0; object-position: var(--hero-media-position); }
+.hero-media-window .hero-video-placeholder { left: auto; top: auto; right: 12%; bottom: 22%; transform: none; color: rgb(255 255 255 / 45%); }
+.hero-shade { z-index: -1; background: rgb(0 0 0 / 12%); }
+.hero-section-peek { position: absolute; z-index: 3; bottom: -1px; left: 50%; transform: translateX(-50%); display: grid; place-items: center; width: 182px; height: 29px; padding-top: 3px; border-radius: 100% 100% 0 0 / 180% 180% 0 0; background: var(--page); color: var(--supporting); }
+.hero-section-peek svg { width: 21px; height: 21px; }
+.hero-section-peek:hover { color: var(--blue); }
+.hero-section-peek:focus-visible { outline-offset: -4px; }
+.audience-section {
+  width: min(calc(100% - var(--page-gutter) * 2), calc(var(--content-width) + 80px));
+  margin-top: clamp(28px, 4vw, 56px);
+  padding: clamp(30px, 5vw, 66px) clamp(14px, 3vw, 40px);
+  border: 1px solid #C8D0DC;
+  border-radius: 12px;
+  background: var(--quiet);
+  box-shadow: var(--shadow);
+}
+.audience-card { display: flex; flex-direction: column; min-height: 260px; }
+.audience-card ul { margin: 0 0 24px; padding-left: 20px; }
+.audience-card li + li { margin-top: 4px; }
+.audience-card li::marker { color: var(--blue); }
+.audience-card p { margin-top: auto; padding-top: 15px; border-top: 1px solid var(--divider); }
+.method-section > .section-heading { text-align: left; }
+.closing-section { padding-bottom: 172px; }
+.newsletter-cue {
+  position: absolute;
+  bottom: calc(100% + 12px);
+  left: var(--newsletter-cue-left, 80%);
+  width: 116px;
+  height: 144px;
+  transform: translateX(-44%);
+  color: var(--chrome-black);
+  pointer-events: none;
+}
+.newsletter-cue svg { width: 100%; height: 100%; }
+.newsletter-cue.is-jumping { animation: curved-newsletter-jump 1s ease-in-out 3; }
+@keyframes curved-newsletter-jump {
+  0%, 100% { transform: translate(-44%, 0); }
+  48% { transform: translate(-44%, -8px); }
+}
+
+/* Newsletter reveal uses a shorter transition than the return to the form. */
+.newsletter { margin-top: calc(-1 * var(--newsletter-raise)); }
+.newsletter-form { --newsletter-transition-duration: 2s; display: block; }
+.newsletter-form.is-confirming { --newsletter-transition-duration: 1s; }
+.newsletter-row { display: flex; gap: 10px; align-items: start; }
+.newsletter-field-wrap { position: relative; min-width: 0; flex: 1; height: 46px; }
+.newsletter-field-wrap input { margin: 0; font-size: 16px; transition: opacity var(--newsletter-transition-duration) ease; }
+.newsletter-field-wrap input::placeholder { font-size: 16px; font-style: italic; }
+.newsletter-confirmation { position: absolute; inset: 0; display: flex; align-items: center; color: #FFFFFF; font-size: 18px; opacity: 0; pointer-events: none; transition: opacity var(--newsletter-transition-duration) ease; }
+.newsletter-form .newsletter-submit { position: relative; width: var(--newsletter-button-width); min-width: 46px; height: 46px; min-height: 46px; padding: 0; overflow: hidden; flex-shrink: 0; transition: width var(--newsletter-transition-duration) ease, background-color 140ms; }
+.newsletter-button-label { opacity: 1; transition: opacity var(--newsletter-transition-duration) ease; white-space: nowrap; }
+.newsletter-button-check { position: absolute; width: 24px; height: 24px; opacity: 0; transition: opacity var(--newsletter-transition-duration) ease; }
+.newsletter-submit:disabled { background: var(--blue); color: #FFFFFF; cursor: default; }
+.newsletter-form.is-confirming .newsletter-submit { width: 46px; }
+.newsletter-form.is-confirming .newsletter-button-label, .newsletter-form.is-confirming .newsletter-field-wrap input { opacity: 0; }
+.newsletter-form.is-confirming .newsletter-button-check, .newsletter-form.is-confirming .newsletter-confirmation { opacity: 1; }
+.newsletter-form.is-confirming .newsletter-field-wrap input { pointer-events: none; }
+.newsletter-error { min-height: 20px; margin-top: 6px; color: #FF9B91; font-size: 12px; line-height: 1.6; }
+.newsletter-field-wrap input[aria-invalid="true"] { border-color: var(--error); outline: 1px solid var(--error); outline-offset: 0; }
+.newsletter-description { margin-top: 5px; }
+.bot-field { position: absolute !important; width: 1px !important; height: 1px !important; left: -10000px !important; opacity: 0 !important; overflow: hidden; }
+.contact-feedback, .application-feedback { min-height: 20px; margin-top: 10px; color: var(--supporting); font-size: 13px; line-height: 1.6; }
+.contact-feedback[data-kind="error"], .application-feedback[data-kind="error"] { color: var(--error); }
+.contact-feedback[data-kind="success"] { color: #137F3A; }
+
+/* Contact stays centred where it fits; visible chrome remains usable. */
+.contact-overlay, .application-page .contact-overlay { inset: 0; display: block; padding: 0; }
+.contact-overlay:not([hidden]), .application-page .contact-overlay:not([hidden]) { animation: contact-backdrop-in 140ms ease-out both; }
+.contact-panel, .application-page .contact-panel { position: absolute; left: 50%; top: var(--contact-top, 12%); width: min(740px, calc(100% - var(--page-gutter) * 2)); max-height: var(--contact-max-height, calc(100dvh - var(--header-height) - 32px)); margin: 0; transform: translateX(-50%); animation: centred-contact-in 150ms ease-out both; }
+.contact-panel, .contact-panel textarea { scrollbar-width: none; scrollbar-gutter: auto; }
+.contact-panel::-webkit-scrollbar, .contact-panel textarea::-webkit-scrollbar { display: none; }
+@keyframes contact-backdrop-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes centred-contact-in { from { opacity: 0; transform: translate(-50%, 7px); } to { opacity: 1; transform: translate(-50%, 0); } }
+
+.faq-page .legal-introduction { max-width: 620px; font-size: 17px; }
+.faq-page .faq-toolbar { margin-top: 30px; margin-bottom: 10px; }
+.faq-page .privacy-accordions { margin-top: 0; }
+.faq-page .accordion-content a { color: var(--blue); }
+.faq-contact { margin-top: 56px; padding-top: 35px; border-top: 1px solid var(--divider); }
+.faq-contact h2 { font-size: 28px; letter-spacing: -.025em; }
+.faq-contact p { margin-top: 12px; color: var(--supporting); font-size: 16px; }
+.faq-contact .button { margin-top: 24px; }
+.faq-page .legal-closing { margin-top: 38px; }
+
+/* Calendar UI is enabled only after the booking service is configured. */
+.live-calendar { display: grid; grid-template-columns: minmax(0, 1fr) 170px; gap: 18px; }
+.live-calendar-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 13px; }
+.calendar-month-title { font-size: 15px; font-weight: 500; }
+.calendar-month-arrow { width: 30px; height: 30px; padding: 0; border: 1px solid var(--divider); background: #FFFFFF; font-size: 21px; line-height: 1; }
+.live-calendar-weekdays, .live-calendar-days { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 3px; }
+.live-calendar-weekdays span { text-align: center; color: var(--muted); font-size: 11px; }
+.live-calendar-days { margin-top: 7px; }
+.calendar-day { aspect-ratio: 1; max-height: 34px; min-height: 28px; padding: 0; border: 1px solid transparent; border-radius: 5px; background: #FFFFFF; font-size: 12px; }
+.calendar-day:not(:disabled):hover { background: var(--blue-pale); }
+.calendar-day.is-selected { background: var(--blue); color: #FFFFFF; }
+.calendar-day:disabled { color: var(--muted); background: var(--quiet); opacity: .65; cursor: default; }
+.calendar-times { max-height: 250px; overflow-y: auto; }
+.calendar-times-title { margin-bottom: 9px; font-size: 13px; }
+.calendar-time-button { display: block; width: 100%; padding: 7px 10px; margin-bottom: 6px; border: 1px solid var(--outline); background: #FFFFFF; font-size: 12px; }
+.calendar-time-button.is-selected { border-color: var(--blue); background: var(--blue-pale); color: var(--blue); }
+.calendar-status { color: var(--supporting); font-size: 12px; line-height: 1.6; }
+.calendar-timezone { margin-top: 12px; font-size: 11px; color: var(--muted); }
+
+@media (max-width: 1100px) { .desktop-navigation { gap: 20px; } }
+@media (max-width: 900px) { .desktop-navigation { display: none; } }
+@media (max-width: 640px) {
+  :root { --hero-opening-width: 90%; --hero-opening-height: 70%; --hero-media-position: 80% 50%; }
+  .hero-inner.wide-container { padding-right: 24px; }
+  .hero-copy { justify-content: start; }
+  .hero-tagline { margin-top: 16px; font-size: clamp(12px, 3.75vw, 17px); }
+  .hero-section-peek { width: 142px; height: 25px; }
+  .hero-media-window .hero-video-placeholder { right: 10%; bottom: 13%; }
+  .footer-inner.wide-container { padding-right: 24px; padding-left: 24px; }
+  .newsletter-confirmation { font-size: 17px; }
+  .newsletter-row { gap: 9px; }
+  .newsletter-cue { width: 94px; height: 117px; }
+  .closing-section { padding-bottom: 150px; }
+  .faq-contact { margin-top: 42px; padding-top: 28px; }
+  .faq-contact h2 { font-size: 25px; }
+  .contact-panel, .application-page .contact-panel { width: calc(100% - 28px); }
+  .live-calendar { grid-template-columns: 1fr; }
+  .calendar-times { max-height: 145px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .newsletter-cue.is-jumping { animation: none; }
+  .newsletter-field-wrap input, .newsletter-confirmation, .newsletter-submit, .newsletter-button-label, .newsletter-button-check { transition-duration: 0s !important; }
+  .contact-overlay, .contact-panel, .application-page .contact-overlay, .application-page .contact-panel { animation: none !important; }
+}

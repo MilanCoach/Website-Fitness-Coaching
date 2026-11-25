@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Milan Grubor — personal fitness coaching.">
+  <meta name="theme-color" content="#F7F8FA">
+  <title>Milan Grubor | Fitness coaching</title>
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="assets/styles.css">
+  <link rel="stylesheet" href="assets/refinements.css">
+  <script src="assets/page-transition.js"></script>
+  <script src="site.config.js" defer></script>
+  <script src="assets/vendor/libphonenumber-max.js" defer></script>
+  <script src="assets/validation.js" defer></script>
+  <script src="assets/api-client.js" defer></script>
+  <script src="assets/site.js" defer></script>
+  <script src="assets/fields.js" defer></script>
+  <script src="assets/contact.js" defer></script>
+  <script src="assets/newsletter.js" defer></script>
+</head>
+<body data-page="home">
+  <a class="skip-link" href="#main-content">Skip to content</a>
+  <header id="site-header" class="site-header"></header>
+
+  <main id="main-content" tabindex="-1">
+    <!-- Set the hero video path in site.config.js. -->
+    <section class="hero" id="home" aria-labelledby="hero-heading">
+      <div class="hero-media-window" id="hero-media-window" aria-hidden="true">
+        <video id="hero-video" class="hero-video" muted loop playsinline preload="metadata" tabindex="-1" hidden></video>
+        <div class="hero-video-placeholder">
+          <svg viewBox="0 0 112 76" fill="none"><rect x="1" y="1" width="110" height="74" rx="5" stroke="currentColor" stroke-width="1.5"/><path d="m47 25 22 13-22 13V25Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>
+          <span>Your video</span>
+        </div>
+      </div>
+      <div class="hero-shade" aria-hidden="true"></div>
+      <div class="hero-inner wide-container">
+        <div class="hero-copy">
+          <h1 id="hero-heading">Adapted<br>to you</h1>
+          <p class="hero-tagline">Every single plan, instruction and adjustment.</p>
+          <a class="hero-section-peek" href="#who-i-coach" data-scroll="who-i-coach" aria-label="Scroll to Who I coach"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m7 9 5 5 5-5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
+        </div>
+      </div>
+      <button id="video-toggle" class="video-toggle" type="button" hidden>Pause video</button>
+    </section>
+
+    <!-- WHO I COACH: these three cards remain equal in width and height. -->
+    <section class="audience-section content-container" id="who-i-coach" aria-labelledby="audience-heading" tabindex="-1">
+      <h2 class="section-heading centered" id="audience-heading">Who I coach</h2>
+      <div class="audience-grid">
+        <article class="audience-card">
+          <h3>Goals</h3>
+          <ul>
+            <li>Lose Fat</li>
+            <li>Build Muscle</li>
+            <li>Be Healthier</li>
+          </ul>
+          <p>Anything you want, simple to achieve.</p>
+        </article>
+        <article class="audience-card">
+          <h3>Experience</h3>
+          <ul>
+            <li>Beginner</li>
+            <li>Intermediate</li>
+            <li>Advanced</li>
+          </ul>
+          <p>Every amount of experience is welcome, even if it's none.</p>
+        </article>
+        <article class="audience-card">
+          <h3>Obstacles</h3>
+          <ul>
+            <li>Time</li>
+            <li>Guesswork</li>
+            <li>Consistency</li>
+          </ul>
+          <p>Anything you face, we can handle it together.</p>
+        </article>
+      </div>
+      <p class="audience-closing"><em>All plans, instructions and adjustments, adapted to you.</em></p>
+    </section>
+
+    <!-- ABOUT: the portrait is 75% of a coaching image's desktop width. -->
+    <section class="about-section content-container" aria-labelledby="about-heading">
+      <div class="about-copy">
+        <h2 class="section-heading" id="about-heading">About me</h2>
+        <p>When I started fitness, I loved to research myself and through it and a lot of experimenting myself, I've finally found reliable methods to achieve fitness goals.</p>
+        <p>Paired with my love for teaching people, it just feels great to help someone achieve their goals.</p>
+      </div>
+      <figure class="media-slot portrait-slot" data-media="portrait" role="img" aria-label="Placeholder for your portrait">
+        <div class="media-slot-label" aria-hidden="true">
+          <svg viewBox="0 0 48 48" fill="none"><circle cx="24" cy="16" r="7"/><path d="M10 40v-4a14 14 0 0 1 28 0v4"/></svg>
+          <span>Your portrait</span>
+        </div>
+      </figure>
+    </section>
+
+    <!-- HOW I COACH: all three rows use image-left / text-right on desktop. -->
+    <section class="method-section content-container" id="how-i-coach" aria-labelledby="method-heading" tabindex="-1">
+      <h2 class="section-heading" id="method-heading">How I coach</h2>
+      <div class="method-rows">
+        <article class="method-row">
+          <figure class="media-slot method-image" data-media="method" data-media-index="0" role="img" aria-label="Placeholder for a coaching image">
+            <div class="media-slot-label" aria-hidden="true"><svg viewBox="0 0 48 48" fill="none"><rect x="7" y="7" width="34" height="34" rx="3"/><circle cx="17" cy="18" r="4"/><path d="m8 34 10-10 8 8 6-6 9 9"/></svg><span>Your coaching image</span></div>
+          </figure>
+          <div class="method-copy">
+            <p>If you message me during the day, I usually answer within the hour and if you want you can even call me. If you have a question, don't be afraid to ask at all.</p>
+            <p>This ensures that if something happens, you will always be able to adjust the plan as it happens with me.</p>
+          </div>
+        </article>
+        <article class="method-row">
+          <figure class="media-slot method-image" data-media="method" data-media-index="1" role="img" aria-label="Placeholder for a coaching image">
+            <div class="media-slot-label" aria-hidden="true"><svg viewBox="0 0 48 48" fill="none"><rect x="7" y="7" width="34" height="34" rx="3"/><circle cx="17" cy="18" r="4"/><path d="m8 34 10-10 8 8 6-6 9 9"/></svg><span>Your coaching image</span></div>
+          </figure>
+          <div class="method-copy">
+            <p>But if we do change the plan, you will never be left wondering why I did it and you will learn about fitness itself with these explanations.</p>
+            <p>Over time, you'll learn what to look for when a workout stalls and how to decide what to change.</p>
+          </div>
+        </article>
+        <article class="method-row">
+          <figure class="media-slot method-image" data-media="method" data-media-index="2" role="img" aria-label="Placeholder for a coaching image">
+            <div class="media-slot-label" aria-hidden="true"><svg viewBox="0 0 48 48" fill="none"><rect x="7" y="7" width="34" height="34" rx="3"/><circle cx="17" cy="18" r="4"/><path d="m8 34 10-10 8 8 6-6 9 9"/></svg><span>Your coaching image</span></div>
+          </figure>
+          <div class="method-copy">
+            <p>I am constantly up to date on the newest research. There is no new technique, method or skill I as a coach am not learning or haven't yet learned.</p>
+            <p>That means the best methods and plans possible for you, no exceptions.</p>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <!-- FINAL CALL TO ACTION -->
+    <section class="closing-section" aria-labelledby="closing-heading">
+      <div class="closing-inner">
+        <h2 id="closing-heading">Interested?<br>Let's get in touch.</h2>
+        <p>We can go over your goals and you can ask me any questions you'd like.<br>There's no pressure to sign up!</p>
+        <a class="button button-primary button-large" href="application.html">Apply</a>
+        <p class="closing-note">We can hop onto a video/audio call or, if you prefer, we can chat back and forth. If you want to ask questions instead, the contact form is below.</p>
+      </div>
+    </section>
+  </main>
+
+  <footer id="site-footer" class="site-footer"></footer>
+  <div id="contact-root"></div>
+  <noscript><p class="noscript-note">Please enable JavaScript to use the navigation and contact form.</p></noscript>
+</body>
+</html>

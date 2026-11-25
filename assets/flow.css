@@ -1,0 +1,196 @@
+/* PRIVACY + LEGAL NOTICE */
+.legal-page { width: min(calc(100% - var(--page-gutter) * 2), 800px); min-height: calc(100svh - var(--header-height)); margin-inline: auto; padding-block: 76px 96px; }
+.legal-page > h1 { font-size: var(--section-title-size); }
+.policy-updated { margin-top: 14px; color: var(--muted); font-size: 13px; font-style: italic; }
+.legal-page .legal-introduction { margin-top: 27px; color: var(--supporting); font-size: 18px; line-height: 1.8; }
+.privacy-glance { margin-top: 38px; }
+.privacy-glance h2, .legal-text-section h2 { font-size: 24px; letter-spacing: -0.025em; }
+.privacy-glance ul { margin: 19px 0 0; padding-left: 22px; color: var(--supporting); }
+.privacy-glance li { padding-left: 4px; }
+.privacy-glance li + li { margin-top: 8px; }
+.privacy-glance li::marker { color: var(--blue); }
+.accordion-toolbar { display: flex; justify-content: end; margin-top: 38px; margin-bottom: 10px; }
+.expand-all-button { min-height: 40px; padding: 8px 12px; border: 0; background: transparent; color: var(--blue); font-size: 14px; }
+.expand-all-button:hover { color: var(--blue-hover); background: var(--blue-pale); }
+.privacy-accordion, .privacy-static-section { border-bottom: 1px solid var(--divider); }
+.privacy-accordion:first-child { border-top: 1px solid var(--divider); }
+.privacy-accordion summary, .privacy-static-section h2 { padding: 23px 6px; font-size: 19px; font-weight: 500; line-height: 1.5; letter-spacing: normal; }
+.privacy-accordion summary { display: flex; align-items: center; gap: 15px; cursor: pointer; list-style: none; }
+.privacy-static-section h2 { padding-left: 30px; }
+.privacy-accordion summary::-webkit-details-marker { display: none; }
+.privacy-accordion summary:hover { color: var(--blue); }
+.accordion-chevron { width: 8px; height: 8px; margin-left: 2px; border-right: 1.5px solid currentColor; border-bottom: 1.5px solid currentColor; transform: rotate(-45deg); transition: transform 140ms ease; flex-shrink: 0; }
+.privacy-accordion[open] .accordion-chevron { transform: rotate(45deg); }
+.accordion-content { padding: 0 8px 28px 30px; color: var(--supporting); font-size: 16px; line-height: 1.85; }
+.accordion-content strong { color: var(--text); font-weight: 600; }
+.template-field { color: var(--muted); }
+.legal-closing { margin-top: 35px; color: var(--supporting); font-size: 15px; line-height: 1.8; }
+.legal-closing .button { margin-top: 25px; }
+.template-note { color: var(--muted); font-size: 13px; }
+.inline-contact-button { padding: 0; border: 0; border-radius: 0; background: transparent; color: var(--blue); font: inherit; text-decoration: underline; text-underline-offset: 4px; }
+.inline-contact-button:hover { color: var(--blue-hover); }
+.legal-text-section { margin-top: 39px; color: var(--supporting); }
+.legal-text-section h2 { color: var(--text); margin-bottom: 17px; }
+.legal-text-section p, .legal-text-section address { font-size: 17px; line-height: 1.85; }
+.legal-text-section address { font-style: normal; }
+.legal-text-section address + p { margin-top: 17px; }
+.legal-notice-page .legal-closing { margin-top: 43px; }
+
+/* APPLICATION — compact bars anchored to opposite corners. */
+.application-page { --header-height: 80px; --application-footer-height: 70px; }
+.application-page .site-header { right: auto; width: max-content; max-width: 100%; border-right: 1px solid var(--divider); border-bottom-right-radius: 8px; opacity: 1; }
+.application-header-inner { display: flex; align-items: center; gap: 36px; height: 100%; padding: 16px 30px; }
+.application-return { font-size: 15px; }
+.application-page .site-footer { position: fixed; z-index: 30; right: 0; bottom: 0; width: max-content; max-width: 100%; min-height: var(--application-footer-height); display: grid; align-items: center; border-left: 1px solid var(--divider); border-top-left-radius: 8px; }
+.application-footer-nav { display: flex; align-items: center; justify-content: end; gap: 28px; padding: 18px 30px; }
+.application-footer-nav a, .application-footer-nav button { color: var(--supporting); padding: 5px 0; font-size: 14px; line-height: 1.4; text-decoration: none; white-space: nowrap; }
+.application-footer-nav a:hover, .application-footer-nav button:hover { color: var(--blue); }
+.application-main { min-height: 100svh; display: grid; place-items: center; padding: calc(var(--header-height) + 24px) var(--page-gutter) calc(var(--application-footer-height) + 24px); }
+.application-card { width: min(740px, 100%); height: min(680px, calc(100dvh - var(--header-height) - var(--application-footer-height) - 48px)); min-height: 300px; border: 1px solid var(--divider); border-radius: 12px; background: var(--surface); box-shadow: var(--shadow); overflow: hidden; transition: width 240ms ease, height 240ms ease; }
+.application-stage { width: 100%; height: 100%; display: flex; flex-direction: column; overflow-y: auto; scrollbar-gutter: stable; overscroll-behavior: contain; padding: 34px 34px 28px; }
+.application-details-form { min-height: 100%; display: flex; flex-direction: column; justify-content: space-between; }
+.application-fields .contact-field { margin-top: 24px; }
+.application-fields .name-address-row > .contact-field { margin-top: 0; }
+.application-fields .contact-field textarea { min-height: 130px; height: clamp(150px, 23vh, 210px); resize: none; }
+.optional-label { color: var(--muted); font-size: 13px; font-style: italic; }
+.form-privacy-note { margin-top: 13px; color: var(--supporting); font-size: 13px; line-height: 1.7; }
+.form-privacy-note a { color: var(--supporting); }
+.application-bottom { display: flex; align-items: end; justify-content: space-between; gap: 20px; margin-top: 28px; }
+.application-supporting-note { color: var(--supporting); font-size: 13px; line-height: 1.65; }
+.application-actions { display: flex; justify-content: end; flex-shrink: 0; gap: 10px; margin-left: auto; }
+.application-actions .button { min-width: 102px; }
+.application-actions .continue-booking { padding-inline: 26px; white-space: nowrap; }
+.application-heading { margin: 0 0 28px; font-size: 29px; line-height: 1.25; letter-spacing: -0.03em; }
+.application-heading:focus, #confirmation-heading:focus { outline: none; }
+.contact-method-tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; align-items: end; flex-shrink: 0; }
+.contact-method-tab { position: relative; display: flex; align-items: center; gap: 13px; min-height: 64px; padding: 12px 17px; border: 1px solid var(--divider); border-bottom: 1px solid var(--blue); border-radius: 12px 12px 0 0; background: var(--quiet); color: var(--supporting); text-align: left; font-size: 16px; line-height: 1.3; }
+.contact-method-tab:hover { color: var(--blue); }
+.contact-method-tab svg { width: 25px; height: 25px; }
+.contact-method-tab[aria-selected="true"] { z-index: 2; min-height: 70px; border-color: var(--blue); border-bottom-color: var(--blue-pale); background: var(--blue-pale); color: var(--text); }
+.contact-method-tab[aria-selected="true"] svg { color: var(--blue); }
+.tab-caption { display: block; margin-top: 3px; color: var(--supporting); font-size: 12px; }
+.method-choice-intro { padding: 24px 4px; }
+.method-choice-intro p { color: var(--muted); font-size: 14px; font-style: italic; }
+.method-folder { padding: 19px 18px 18px; border: 1px solid var(--blue); border-radius: 0 0 8px 8px; margin-top: -1px; }
+.method-folder .contact-field:first-child { margin-top: 0; }
+.method-folder .contact-field { margin-top: 16px; }
+.method-folder textarea { min-height: 74px; height: 86px; resize: none; font-size: 16px; line-height: 1.55; }
+.phone-field-row { display: flex; align-items: end; gap: 18px; }
+.phone-field-row .phone-field { width: 260px; max-width: 100%; flex-shrink: 0; }
+.phone-note { margin: 0 0 12px; color: var(--muted); font-size: 12px; line-height: 1.6; }
+.method-bottom { margin-top: auto; padding-top: 25px; }
+
+/* Contact overlays the application lower down, with a short entrance. */
+.application-page .contact-overlay { inset: 0; align-items: start; padding: 0 var(--page-gutter); }
+.application-page .contact-overlay:not([hidden]) { animation: contact-backdrop-appear 140ms ease-out both; }
+.application-page .contact-panel { margin-top: var(--application-contact-top, calc(var(--header-height) + 24px)); max-height: calc(100dvh - var(--header-height) - 36px); animation: contact-panel-appear 150ms ease-out both; }
+@keyframes contact-backdrop-appear { from { opacity: 0; } to { opacity: 1; } }
+@keyframes contact-panel-appear { from { opacity: 0; transform: translateY(7px); } to { opacity: 1; transform: translateY(0); } }
+
+/* CONFIRMATION: smaller card, simultaneous check draw + masked text slide. */
+.application-card.is-confirmed { width: min(370px, 100%); height: 340px; }
+.confirmation-stage { align-items: center; justify-content: center; padding: 24px 26px; scrollbar-gutter: auto; }
+.confirmation-icon { width: 88px; height: 88px; flex-shrink: 0; border-radius: 50%; background: var(--success-pale); color: var(--success); }
+.confirmation-icon svg { width: 100%; height: 100%; }
+.confirmation-copy-window { width: 100%; margin-top: 14px; overflow: hidden; }
+.confirmation-copy-window h2 { margin: 0; font-size: 28px; line-height: 1.25; text-align: center; white-space: nowrap; }
+.confirmation-return { align-self: center; margin-top: 20px; min-height: 38px; padding: 9px 13px; font-size: 13px; }
+.confirmation-note { margin-top: 14px; color: var(--muted); font-size: 12px; line-height: 1.6; text-align: center; }
+.is-confirmed .confirmation-icon { animation: confirmation-pop 390ms ease-out both; }
+.is-confirmed .confirmation-tick { stroke-dasharray: 1; animation: draw-confirmation 390ms ease-out both; }
+.is-confirmed .confirmation-copy-window h2 { animation: confirmation-slide 390ms ease-out both; }
+@keyframes confirmation-pop { from { opacity: 0; transform: scale(.83); } to { opacity: 1; transform: scale(1); } }
+@keyframes draw-confirmation { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
+@keyframes confirmation-slide { from { transform: translateX(-110%); } to { transform: translateX(0); } }
+
+@media (max-width: 900px) {
+  .application-page { --header-height: 76px; }
+  .application-header-inner { gap: 30px; padding-inline: 24px; }
+}
+@media (max-width: 760px), (max-height: 500px) and (pointer: coarse) {
+  .application-page { display: flex; min-height: 100dvh; flex-direction: column; }
+  .application-page .site-header { position: sticky; top: 0; flex: none; align-self: start; }
+  .application-page .application-main { flex: 1 0 auto; min-height: 0; padding-block: 20px; }
+  .application-page .site-footer {
+    position: sticky;
+    right: auto;
+    bottom: 0;
+    width: 100%;
+    flex-shrink: 0;
+    border-left: 0;
+    border-top-left-radius: 0;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  .application-page .application-footer-nav {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 5px;
+    padding: 0 max(8px, env(safe-area-inset-right, 0px)) 0 max(8px, env(safe-area-inset-left, 0px));
+    text-align: center;
+  }
+  .application-footer-nav a, .application-footer-nav button {
+    display: grid;
+    min-height: 44px;
+    place-items: center;
+    padding: 6px 2px;
+    white-space: normal;
+  }
+}
+@media (max-width: 640px) {
+  .legal-page { padding-block: 50px 72px; }
+  .legal-page .legal-introduction { font-size: 17px; margin-top: 23px; }
+  .privacy-glance { margin-top: 30px; }
+  .privacy-glance h2, .legal-text-section h2 { font-size: 22px; }
+  .privacy-glance li { font-size: 16px; }
+  .accordion-toolbar { margin-top: 26px; }
+  .privacy-accordion summary, .privacy-static-section h2 { padding-block: 21px; font-size: 17px; }
+  .privacy-accordion summary { gap: 13px; }
+  .privacy-static-section h2 { padding-left: 26px; }
+  .accordion-content { padding-left: 26px; padding-right: 0; font-size: 15px; }
+  .legal-text-section p, .legal-text-section address { font-size: 16px; }
+  .application-page { --header-height: 72px; --application-footer-height: 62px; }
+  .application-header-inner { gap: 20px; padding: 14px 20px; }
+  .application-return { font-size: 14px; }
+  .application-footer-nav { gap: 24px; padding: 14px 20px; }
+  .application-footer-nav a, .application-footer-nav button { font-size: 12px; }
+  .application-main { padding: calc(var(--header-height) + 20px) 18px calc(var(--application-footer-height) + 20px); }
+  .application-card { height: min(680px, calc(100dvh - var(--header-height) - var(--application-footer-height) - 40px)); border-radius: 10px; }
+  .application-stage { padding: 27px 22px 24px; scrollbar-gutter: auto; }
+  .application-fields .contact-field { margin-top: 23px; }
+  .application-fields .contact-field textarea { height: 170px; }
+  .application-bottom { flex-wrap: wrap; gap: 18px; margin-top: 25px; }
+  .application-supporting-note { width: 100%; font-size: 12px; }
+  .application-actions { max-width: 100%; }
+  .application-actions .button { min-width: 90px; padding-inline: 17px; font-size: 14px; }
+  .application-heading { font-size: 25px; margin-bottom: 25px; }
+  .contact-method-tab { min-height: 68px; gap: 9px; padding: 10px 11px; font-size: 14px; }
+  .contact-method-tab[aria-selected="true"] { min-height: 74px; }
+  .contact-method-tab svg { width: 21px; height: 21px; }
+  .tab-caption { font-size: 10px; line-height: 1.3; }
+  .method-folder { padding: 18px 12px; }
+  .method-folder .contact-field label { font-size: 14px; }
+  .method-folder textarea { height: 132px; font-size: 16px; }
+  .method-folder [data-field-limit]::placeholder { font-size: 11px; }
+  .phone-field-row { flex-direction: column; gap: 9px; align-items: start; }
+  .phone-field-row .phone-field { width: 100%; }
+  .phone-note { margin-bottom: 0; font-size: 11px; }
+  .method-bottom { margin-top: auto; padding-top: 24px; }
+  .application-page .contact-overlay { padding-inline: 14px; }
+  .application-page .contact-panel { max-height: calc(100dvh - var(--header-height) - 32px); }
+  .application-card.is-confirmed { width: min(370px, 100%); height: 340px; }
+  .confirmation-stage { padding: 24px; }
+  .confirmation-copy-window h2 { font-size: 26px; }
+}
+@media (max-width: 360px) {
+  .application-header-inner { gap: 16px; padding-inline: 18px; }
+  .application-footer-nav { gap: 20px; padding-inline: 18px; }
+  .application-stage { padding-inline: 17px; }
+  .application-heading { font-size: 23px; }
+  .contact-method-tab { gap: 7px; padding-inline: 8px; }
+  .contact-method-tab svg { width: 18px; height: 18px; }
+  .confirmation-copy-window h2 { font-size: 24px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .application-page .contact-overlay, .application-page .contact-panel, .is-confirmed .confirmation-icon, .is-confirmed .confirmation-tick, .is-confirmed .confirmation-copy-window h2 { animation: none !important; }
+  .confirmation-tick { stroke-dashoffset: 0; }
+}

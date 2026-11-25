@@ -1,0 +1,66 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "milan-grubor-test",
+  "preview_urls": true,
+  "main": "server/worker.js",
+  "compatibility_date": "2026-11-08",
+  "assets": {
+    "directory": "./dist",
+    "binding": "ASSETS",
+    "run_worker_first": [
+      "/api/*", "/", "/index.html",
+      "/application", "/application/", "/application.html",
+      "/faq", "/faq/", "/faq.html",
+      "/privacy-policy", "/privacy-policy/", "/privacy-policy.html",
+      "/legal-notice", "/legal-notice/", "/legal-notice.html"
+    ]
+  },
+  "d1_databases": [
+    {
+      "binding": "ANALYTICS_DB",
+      "database_name": "milan-coaching-analytics",
+      "database_id": "39cf47f9-ee11-4a5f-b574-0e1d84086587"
+    }
+  ],
+  "ratelimits": [
+    { "name": "REQUEST_LIMITER", "namespace_id": "1001", "simple": { "limit": 60, "period": 60 } },
+    { "name": "RECIPIENT_LIMITER", "namespace_id": "1002", "simple": { "limit": 5, "period": 60 } }
+  ],
+  "vars": {
+    "MAIL_FROM": "milan@milangrubor.com",
+    "MAIL_FROM_NAME": "Milan Grubor",
+    "MAIL_TO": "milan@milangrubor.com",
+    "NYLAS_API_REGION": "eu",
+    "NYLAS_CONFIGURATION_ID": "a735259b-f9ea-4244-87d9-6fa088156e00",
+    "NYLAS_GRANT_ID": "88501d7f-e483-4043-956a-c6e35a51236e"
+  },
+"previews": {
+  "vars": {
+    "MAIL_FROM": "milan@milangrubor.com",
+    "MAIL_FROM_NAME": "Milan Grubor",
+    "MAIL_TO": "milan@milangrubor.com",
+    "NYLAS_API_REGION": "eu",
+    "NYLAS_GRANT_ID": "88501d7f-e483-4043-956a-c6e35a51236e",
+    "NYLAS_CONFIGURATION_ID": "a735259b-f9ea-4244-87d9-6fa088156e00"
+  },
+  "d1_databases": [
+    {
+      "binding": "ANALYTICS_DB",
+      "database_name": "milan-coaching-analytics-test",
+      "database_id": "39cf47f9-ee11-4a5f-b574-0e1d84086587"
+    }
+  ],
+  "ratelimits": [
+    {
+      "name": "REQUEST_LIMITER",
+      "namespace_id": "2001",
+      "simple": { "limit": 60, "period": 60 }
+    },
+    {
+      "name": "RECIPIENT_LIMITER",
+      "namespace_id": "2002",
+      "simple": { "limit": 5, "period": 60 }
+    }
+  ]
+}
+}
