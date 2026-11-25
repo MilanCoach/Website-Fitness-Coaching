@@ -203,6 +203,7 @@ export function createHandler({ fetch: providerFetch = globalThis.fetch, now = (
       videoEmail(env, guest, booking.booking_id),
       sendPlunk(env, { to: env.MAIL_TO, subject: "New coaching video call booked", body: `<p>${html(lines.join("\n"))}</p>`, reply: email }, booking.booking_id, "booking-owner")
     ]);
+    if (confirmation.status === "rejected") console.error("Booking confirmation email could not be queued");
     if (owner.status === "rejected") console.error("Booking owner email could not be queued");
     const confirmationEmail = confirmation.status === "fulfilled";
     return { confirmationEmail, ...(!confirmationEmail ? { contactEmail: env.MAIL_TO, zoomUrl } : {}) };
@@ -314,7 +315,12 @@ export function createHandler({ fetch: providerFetch = globalThis.fetch, now = (
       const result = await scheduler.book(env, start / 1_000, { name: clean(body.name), email: clean(body.email), timezone: body.timeZone });
       count("bookings_confirmed");
       const receipts = bookingEmails(env, body, start, result);
-      context?.waitUntil?.(receipts);
+      if (typeof context?.waitUntil === "function") {
+        context.waitUntil(receipts.catch(() => {
+          console.error("Booking notification work could not be completed");
+        }));
+        return json({ ok: true, bookingUid: result.booking.booking_id, confirmationEmailPending: true }, 201);
+      }
       return json({ ok: true, bookingUid: result.booking.booking_id, ...await receipts }, 201);
     } catch (error) {
       return json({ code: error instanceof PublicError ? error.code : "service_unavailable", ...(error instanceof PublicError && error.field ? { field: error.field } : {}) }, error instanceof PublicError ? error.status : 503);

@@ -148,10 +148,12 @@
       if (generation !== submissionGeneration) return;
       const isCall = method === "call";
       const emailFailed = result.confirmationEmail === false;
-      confirmationHeading.textContent = emailFailed ? (isCall ? "Booking confirmed" : "Request received") : "Check your email!";
+      confirmationHeading.textContent = isCall ? "Booking confirmed" : emailFailed ? "Request received" : "Check your email!";
       confirmationNote.hidden = !!result.preview;
       confirmationNote.textContent = isCall ? "Your booking email contains the call details." : "I will get in touch via WhatsApp.";
-      if (isCall && emailFailed) {
+      if (isCall && result.confirmationEmailPending) {
+        confirmationNote.textContent = "Your call is booked. Your confirmation email with the call details will follow shortly.";
+      } else if (isCall && emailFailed) {
         confirmationNote.textContent = "Your call is booked. I couldn’t send the confirmation email.";
         const detailsLink = document.createElement("a");
         detailsLink.href = result.zoomUrl || `mailto:${result.contactEmail}`;

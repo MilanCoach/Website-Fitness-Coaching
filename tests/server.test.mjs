@@ -21,7 +21,13 @@ const request = (path, body, options = {}) => new Request(`https://coaching.exam
 const okay = (value, status = 200) => new Response(JSON.stringify(value), { status });
 const queued = () => okay({ success: true, data: { emails: [{ status: "queued" }] } });
 function mockHandler(callback) { return createHandler({ now: () => now, fetch: callback }); }
-function mockScheduler({ slots = [{ start_time: startSeconds, end_time: endSeconds, participants: ["private@example.com"] }], bookingStatus = "booked", configuration, eventStart = startSeconds, confirmationFails = false } = {}) {
+function providerGate() {
+  let enter, release;
+  const entered = new Promise((resolve) => { enter = resolve; });
+  const resumed = new Promise((resolve) => { release = resolve; });
+  return { entered, release, async wait() { enter(); await resumed; } };
+}
+function mockScheduler({ slots = [{ start_time: startSeconds, end_time: endSeconds, participants: ["private@example.com"] }], availabilityWindowStart, bookingStatus = "booked", bookingResponseStatus = 200, bookingConnectionFails = false, bookingGate, eventGate, emailGate, configuration, eventStart = startSeconds, confirmationFails = false } = {}) {
   const calls = [];
   const sends = [];
   const handle = mockHandler(async (url, options) => {
@@ -44,22 +50,30 @@ function mockScheduler({ slots = [{ start_time: startSeconds, end_time: endSecon
     if (path === "/v3/scheduling/availability") {
       assert.equal(options.headers.Authorization, "Bearer private-session");
       assert.equal(new URL(url).searchParams.has("start_time"), true);
+      if (availabilityWindowStart !== undefined && Number(new URL(url).searchParams.get("start_time")) !== availabilityWindowStart) {
+        return okay({ data: { time_slots: [] } });
+      }
       return okay({ data: { time_slots: slots } });
     }
     if (path === "/v3/scheduling/bookings") {
+      if (bookingGate) await bookingGate.wait();
+      if (bookingConnectionFails) throw new TypeError("Test connection failure");
       assert.equal(options.headers.Authorization, "Bearer private-session");
       assert.deepEqual(payload, {
         start_time: startSeconds, end_time: endSeconds,
         guest: { name: details.name, email: details.email, timezone: "Europe/Berlin" }
       });
+      if (bookingResponseStatus !== 200) return okay({ error: { type: "test_booking_error" } }, bookingResponseStatus);
       return okay({ data: { booking_id: "booking-123", status: bookingStatus, event_id: "event-123" } });
     }
     if (path === "/v3/grants/icloud-grant/events/event-123") {
       assert.equal(new URL(url).searchParams.get("calendar_id"), "icloud-calendar");
+      if (eventGate) await eventGate.wait();
       return okay({ data: { conferencing: { details: { url: joinUrl } }, when: { start_time: eventStart } } });
     }
     if (url === "https://next-api.useplunk.com/v1/send") {
       sends.push(payload);
+      if (emailGate) await emailGate.wait();
       return confirmationFails && payload.to === details.email ? okay({}, 500) : queued();
     }
     assert.fail(`Unexpected provider request to ${path}`);
@@ -183,21 +197,92 @@ test("availability opens a private Nylas session and exposes only normalized 25-
   await analytics.flush();
   assert.deepEqual(analytics.writes, [["2026-11-02", "calendar_availability_requests"]]);
 });
+test("booking accepts an advertised slot when a different availability window would omit it", async () => {
+  const availabilityStart = "2026-11-09T00:00:00.000Z";
+  const { handle, calls, sends } = mockScheduler({ availabilityWindowStart: Date.parse(availabilityStart) / 1_000 });
+  const availability = await handle(new Request(`https://coaching.example/api/availability?${new URLSearchParams({
+    start: availabilityStart, end: "2026-11-10T00:00:00.000Z", timeZone: "Europe/Berlin"
+  })}`), env());
+  assert.equal(availability.status, 200);
+  assert.deepEqual((await availability.json()).slots, [start]);
+
+  const response = await handle(request("book", bookingDetails), env());
+  assert.equal(response.status, 201);
+  assert.equal((await response.json()).confirmationEmail, true);
+  assert.equal(calls.filter(({ path }) => path === "/v3/scheduling/bookings").length, 1);
+  assert.equal(calls.filter(({ path }) => path === "/v3/scheduling/availability").length, 1);
+  assert.equal(sends.length, 2);
+});
+test("booking responds after Nylas confirms without waiting for the Zoom lookup or emails", async () => {
+  const bookingGate = providerGate(), eventGate = providerGate(), emailGate = providerGate();
+  const { handle, calls, sends } = mockScheduler({ bookingGate, eventGate, emailGate });
+  const background = [];
+  let responseFinished = false, backgroundFinished = false;
+  const responsePromise = handle(request("book", bookingDetails), env(), {
+    waitUntil(task) { background.push(task.then(() => { backgroundFinished = true; })); }
+  }).then((response) => { responseFinished = true; return response; });
+  try {
+    await bookingGate.entered;
+    assert.equal(responseFinished, false);
+    assert.equal(sends.length, 0);
+    bookingGate.release();
+
+    await eventGate.entered;
+    const result = await Promise.race([
+      responsePromise.then((response) => ({ response })),
+      new Promise((resolve) => setImmediate(() => resolve({ blocked: true })))
+    ]);
+    assert.equal(result.blocked, undefined, "a confirmed booking must not wait for its notification work");
+    assert.equal(result.response.status, 201);
+    assert.deepEqual(await result.response.json(), { ok: true, bookingUid: "booking-123", confirmationEmailPending: true });
+    assert.equal(background.length, 1);
+    assert.equal(backgroundFinished, false);
+    assert.equal(sends.length, 0);
+
+    eventGate.release();
+    await emailGate.entered;
+    assert.equal(backgroundFinished, false);
+    assert.ok(sends.length >= 1);
+    emailGate.release();
+    await Promise.all(background);
+    assert.equal(backgroundFinished, true);
+    assert.equal(sends.length, 2);
+    assert.ok(sends.find(({ to }) => to === details.email).body.includes(joinUrl));
+    assert.equal(calls.filter(({ path }) => path === "/v3/scheduling/bookings").length, 1);
+  } finally {
+    bookingGate.release(); eventGate.release(); emailGate.release();
+    await responsePromise;
+    await Promise.all(background);
+  }
+});
 test("booking emails and analytics follow a provider-confirmed booking", async () => {
   const { handle, calls, sends } = mockScheduler();
   const analytics = mockCounters();
   const response = await handle(request("book", { ...bookingDetails, salutation: "Other", eventTypeId: 999, allowConflicts: true }), analytics.settings, analytics.context);
   assert.equal(response.status, 201);
-  assert.deepEqual(await response.json(), { ok: true, bookingUid: "booking-123", confirmationEmail: true });
-  assert.deepEqual(calls.map(({ path }) => path).slice(2, 5), [
-    "/v3/scheduling/availability", "/v3/scheduling/bookings", "/v3/grants/icloud-grant/events/event-123"
+  assert.deepEqual(await response.json(), { ok: true, bookingUid: "booking-123", confirmationEmailPending: true });
+  await analytics.flush();
+  assert.deepEqual(calls.map(({ path }) => path).slice(2, 4), [
+    "/v3/scheduling/bookings", "/v3/grants/icloud-grant/events/event-123"
   ]);
   const confirmation = sends.find(({ to }) => to === details.email);
   assert.match(confirmation.body, /11:00/);
   assert.ok(confirmation.body.includes(joinUrl));
   assert.ok(sends.find(({ to }) => to === "owner@example.com").body.includes(details.message));
-  await analytics.flush();
   assert.deepEqual(analytics.writes, [["2026-11-02", "booking_attempts_valid"], ["2026-11-02", "bookings_confirmed"]]);
+});
+test("a background confirmation email failure is logged without changing the confirmed booking", async (t) => {
+  const errorLog = t.mock.method(console, "error", () => {});
+  const { handle, calls, sends } = mockScheduler({ confirmationFails: true });
+  const background = [];
+  const response = await handle(request("book", bookingDetails), env(), { waitUntil(task) { background.push(task); } });
+  assert.equal(response.status, 201);
+  assert.deepEqual(await response.json(), { ok: true, bookingUid: "booking-123", confirmationEmailPending: true });
+  await Promise.all(background);
+  assert.equal(background.length, 1);
+  assert.equal(calls.filter(({ path }) => path === "/v3/scheduling/bookings").length, 1);
+  assert.equal(sends.length, 2);
+  assert.ok(errorLog.mock.calls.some(({ arguments: args }) => args[0] === "Booking confirmation email could not be queued"));
 });
 test("confirmed booking survives confirmation email failure and returns private fallback details to the applicant", async () => {
   const { handle } = mockScheduler({ confirmationFails: true });
@@ -208,7 +293,7 @@ test("confirmed booking survives confirmation email failure and returns private 
 test("pending, taken or misconfigured bookings produce no confirmation email or confirmed count", async () => {
   for (const [fixture, status, created] of [
     [{ bookingStatus: "pending" }, 503, true],
-    [{ slots: null }, 409, false],
+    [{ bookingResponseStatus: 409 }, 409, true],
     [{ configuration: { requires_session_auth: false } }, 503, false]
   ]) {
     const { handle, calls, sends } = mockScheduler(fixture);
@@ -219,6 +304,27 @@ test("pending, taken or misconfigured bookings produce no confirmation email or 
     assert.equal(sends.length, 0);
     await analytics.flush();
     assert.deepEqual(analytics.writes, [["2026-11-02", "booking_attempts_valid"]]);
+  }
+});
+test("booking errors do not trigger a different availability query or confirmation emails", async () => {
+  for (const bookingResponseStatus of [400, 401, 403, 422, 429]) {
+    const { handle, calls, sends } = mockScheduler({ bookingResponseStatus, slots: null });
+    const response = await handle(request("book", bookingDetails), env());
+    assert.equal(response.status, 503);
+    assert.deepEqual(await response.json(), { code: "service_unavailable" });
+    assert.equal(calls.filter(({ path }) => path === "/v3/scheduling/bookings").length, 1);
+    assert.equal(calls.some(({ path }) => path === "/v3/scheduling/availability"), false);
+    assert.equal(sends.length, 0);
+  }
+});
+test("an uncertain booking write is not retried or followed by confirmation emails", async () => {
+  for (const fixture of [{ bookingResponseStatus: 500 }, { bookingConnectionFails: true }]) {
+    const { handle, calls, sends } = mockScheduler(fixture);
+    const response = await handle(request("book", bookingDetails), env());
+    assert.equal(response.status, 503);
+    assert.deepEqual(await response.json(), { code: "booking_uncertain" });
+    assert.equal(calls.filter(({ path }) => path === "/v3/scheduling/bookings").length, 1);
+    assert.equal(sends.length, 0);
   }
 });
 test("page counters use the actual HTML responses and retain weekly totals only", async () => {
